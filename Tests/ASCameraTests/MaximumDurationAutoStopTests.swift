@@ -42,7 +42,8 @@ struct MaximumDurationAutoStopTests {
         #expect(received == result)
         #expect(camera.state == .running)
         #expect(camera.lastRecordingResult == result)
-        #expect(camera.currentRecordingDuration == .seconds(2))
+        // The live counter resets to zero on stop; the duration lives on the result.
+        #expect(camera.currentRecordingDuration == .zero)
         // The library stopped automatically — the consumer never called stopRecording.
         #expect(await engine.stopRecordingCount == 0)
     }

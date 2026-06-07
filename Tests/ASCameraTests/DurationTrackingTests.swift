@@ -34,8 +34,8 @@ struct DurationTrackingTests {
         #expect(camera.currentRecordingDuration == .seconds(3))
     }
 
-    @Test("Duration resets to zero for a new recording")
-    func resetsForNewRecording() async throws {
+    @Test("Duration resets to zero when recording stops")
+    func resetsOnStop() async throws {
         let engine = FakeCameraEngine()
         await engine.setResultOnStop(
             RecordingResult(url: URL(fileURLWithPath: "/tmp/a.mov"), duration: .seconds(8), fileSize: 1)
@@ -44,11 +44,15 @@ struct DurationTrackingTests {
         try await camera.start()
         try await camera.startRecording()
         engine.emit(.recordingProgress(.seconds(8)))
-        _ = try await camera.stopRecording()
-        // After stopping, the duration reflects the finished recording.
-        #expect(camera.currentRecordingDuration == .seconds(8))
+        let result = try await camera.stopRecording()
 
-        // A new recording resets the counter.
+        // The live counter resets to zero once recording stops...
+        #expect(camera.currentRecordingDuration == .zero)
+        // ...while the finished recording's duration remains available on the result.
+        #expect(result.duration == .seconds(8))
+        #expect(camera.lastRecordingResult?.duration == .seconds(8))
+
+        // A new recording also starts from zero.
         try await camera.startRecording()
         #expect(camera.currentRecordingDuration == .zero)
     }

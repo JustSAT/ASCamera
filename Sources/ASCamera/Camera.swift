@@ -28,8 +28,10 @@ public final class Camera {
     /// The current lifecycle state. Observe directly from SwiftUI.
     public var state: CameraState { stateMachine.state }
 
-    /// The elapsed duration of the current (or most recent) recording. Starts at `.zero` and
-    /// updates continuously while recording. Resets to `.zero` when a new recording begins.
+    /// The elapsed duration of the in-progress recording. Starts at `.zero` and updates
+    /// continuously while recording, then resets to `.zero` when the recording stops (the finished
+    /// recording's duration remains available via ``lastRecordingResult`` and
+    /// ``recordingFinishedStream()``).
     public private(set) var currentRecordingDuration: Duration = .zero
 
     /// The most recently completed recording, including auto-stopped recordings.
@@ -269,9 +271,9 @@ public final class Camera {
             if stateMachine.state.isRecording {
                 stateMachine.finishRecording()
             }
-            currentRecordingDuration = result.duration
+            currentRecordingDuration = .zero
             lastRecordingResult = result
-            broadcastDuration(result.duration)
+            broadcastDuration(.zero)
             broadcastFinished(result)
             if let pendingStop {
                 self.pendingStop = nil
