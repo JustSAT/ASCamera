@@ -1,0 +1,31 @@
+# SwiftLint configuration for ASCamera.
+
+included:
+  - Sources
+  - Tests
+
+disabled_rules:
+  # `override class var layerClass` legitimately requires `class`, not `static`.
+  - static_over_final_class
+
+identifier_name:
+  # Allow short, intentional public API names such as `.hd`, `.on`, `.fps`.
+  min_length:
+    warning: 2
+    error: 1
+  excluded:
+    - id
+    - to
+
+line_length:
+  warning: 140
+  error: 200
+  ignores_comments: true
+
+type_body_length:
+  warning: 350
+  error: 450
+
+file_length:
+  warning: 500
+  error: 700
