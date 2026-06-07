@@ -45,8 +45,20 @@ public enum CameraState: Sendable, Equatable {
         }
     }
 
-    /// Whether a recording is active (in progress or being finalized) in this state.
+    /// Whether a recording is actively capturing frames in this state.
+    ///
+    /// This is `true` only for ``recording``. While a recording is being finalized to disk
+    /// (``stoppingRecording``) it is `false`, so UI bound to it clears the recording indicator the
+    /// instant the user stops, rather than waiting for the file to finish writing.
     public var isRecording: Bool {
+        self == .recording
+    }
+
+    /// Whether a recording session exists, including while it is being finalized to disk.
+    ///
+    /// Internal: drives teardown/finish logic that must also run during ``stoppingRecording``,
+    /// where the public ``isRecording`` is already `false`.
+    var hasActiveRecording: Bool {
         switch self {
         case .recording, .stoppingRecording:
             return true

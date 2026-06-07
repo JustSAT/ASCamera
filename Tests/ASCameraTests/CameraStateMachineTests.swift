@@ -30,6 +30,24 @@ struct CameraStateMachineTests {
         }
     }
 
+    @Test("isRecording is true only while recording, not while stopping")
+    func isRecordingExcludesStopping() {
+        #expect(CameraState.recording.isRecording)
+        #expect(!CameraState.stoppingRecording.isRecording)
+        for state: CameraState in [.idle, .starting, .running, .permissionDenied, .failed(.cancelled)] {
+            #expect(!state.isRecording)
+        }
+    }
+
+    @Test("hasActiveRecording covers both recording and stopping")
+    func hasActiveRecordingCoversStopping() {
+        #expect(CameraState.recording.hasActiveRecording)
+        #expect(CameraState.stoppingRecording.hasActiveRecording)
+        for state: CameraState in [.idle, .starting, .running, .permissionDenied, .failed(.cancelled)] {
+            #expect(!state.hasActiveRecording)
+        }
+    }
+
     @Test("Full happy-path transition sequence")
     func happyPath() throws {
         var machine = CameraStateMachine()

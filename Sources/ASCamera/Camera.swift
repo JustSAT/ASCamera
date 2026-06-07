@@ -114,7 +114,7 @@ public final class Camera {
     ///   configuration error (the state becomes ``CameraState/failed(_:)``).
     public func start() async throws {
         // If already active, starting is a no-op.
-        if stateMachine.state == .running || stateMachine.state.isRecording { return }
+        if stateMachine.state == .running || stateMachine.state.hasActiveRecording { return }
         guard stateMachine.canStart else { return }
 
         guard await ensureAuthorization(.video) else {
@@ -145,7 +145,7 @@ public final class Camera {
     /// Stops the camera and returns to the idle state. Safe to call when already idle.
     public func stop() async {
         await engine.stop()
-        if stateMachine.state.isRecording, let pendingStop {
+        if stateMachine.state.hasActiveRecording, let pendingStop {
             self.pendingStop = nil
             pendingStop.resume(throwing: CameraError.cancelled)
         }
@@ -268,7 +268,7 @@ public final class Camera {
             broadcastDuration(duration)
 
         case .recordingFinished(let result):
-            if stateMachine.state.isRecording {
+            if stateMachine.state.hasActiveRecording {
                 stateMachine.finishRecording()
             }
             currentRecordingDuration = .zero
@@ -281,7 +281,7 @@ public final class Camera {
             }
 
         case .recordingFailed(let error):
-            if stateMachine.state.isRecording {
+            if stateMachine.state.hasActiveRecording {
                 stateMachine.finishRecording()
             }
             if let pendingStop {
