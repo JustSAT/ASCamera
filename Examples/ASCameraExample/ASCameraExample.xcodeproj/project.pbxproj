@@ -13,6 +13,7 @@
 		216D7A4F6D7F8133237A5006 /* SharedUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF42B99658CD3578996276C8 /* SharedUI.swift */; };
 		254E5B30688AAE20364D103E /* RecordingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47ED7255D89E335371E1E79F /* RecordingsStore.swift */; };
 		50320A0C0AD7AD29189DE9C9 /* Recording.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF76468B63A627C170E212E9 /* Recording.swift */; };
+		5ACA8249354FB27508697A07 /* InterfaceOrientationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68B5BC74964FF1BCAF1AAFA3 /* InterfaceOrientationController.swift */; };
 		97A23FFFBABD2306AC951CE7 /* RecordingDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B324DC9BAC90B42D38ABB994 /* RecordingDetailView.swift */; };
 		A430A8E9DF2261F3535A01B4 /* CardRecorderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA2DFE647F3EAC42ADBA8963 /* CardRecorderView.swift */; };
 		BDD093F64C875503F69EC8C2 /* ASCamera in Frameworks */ = {isa = PBXBuildFile; productRef = 73172E5B43AD8CDAE1BD39F0 /* ASCamera */; };
@@ -22,16 +23,17 @@
 
 /* Begin PBXFileReference section */
 		178087A8FE6EEA623B12EFFE /* RecordingsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingsListView.swift; sourceTree = "<group>"; };
-		1854ED4F5D35AE491C05312D /* ASCameraExample.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = ASCameraExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1854ED4F5D35AE491C05312D /* ASCameraExample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ASCameraExample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		34728B67101B84AC97FE8491 /* RecordingMetadata.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingMetadata.swift; sourceTree = "<group>"; };
 		47ED7255D89E335371E1E79F /* RecordingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingsStore.swift; sourceTree = "<group>"; };
 		4851DEECB1D58EC1426CE685 /* FullScreenRecorderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullScreenRecorderView.swift; sourceTree = "<group>"; };
 		4C2C8A00D593CBFD04BE9DE5 /* ASCameraExampleApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ASCameraExampleApp.swift; sourceTree = "<group>"; };
-		68AB062E3C7AB0290357BA92 /* sg-camera */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "sg-camera"; path = ../..; sourceTree = SOURCE_ROOT; };
+		68B5BC74964FF1BCAF1AAFA3 /* InterfaceOrientationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InterfaceOrientationController.swift; sourceTree = "<group>"; };
 		AA2DFE647F3EAC42ADBA8963 /* CardRecorderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardRecorderView.swift; sourceTree = "<group>"; };
 		AF76468B63A627C170E212E9 /* Recording.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Recording.swift; sourceTree = "<group>"; };
 		B0C10E2C4457F5A8003540BD /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		B324DC9BAC90B42D38ABB994 /* RecordingDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingDetailView.swift; sourceTree = "<group>"; };
+		D664935646AE72E4CA606499 /* as-camera */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "as-camera"; path = ../..; sourceTree = SOURCE_ROOT; };
 		DF42B99658CD3578996276C8 /* SharedUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedUI.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -60,6 +62,7 @@
 			children = (
 				4C2C8A00D593CBFD04BE9DE5 /* ASCameraExampleApp.swift */,
 				B0C10E2C4457F5A8003540BD /* HomeView.swift */,
+				68B5BC74964FF1BCAF1AAFA3 /* InterfaceOrientationController.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -86,7 +89,7 @@
 		684CC3BB81DE49E08897B933 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
-				68AB062E3C7AB0290357BA92 /* sg-camera */,
+				D664935646AE72E4CA606499 /* as-camera */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
@@ -151,8 +154,6 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
-				TargetAttributes = {
-				};
 			};
 			buildConfigurationList = 067969109A6681E774E8F6B1 /* Build configuration list for PBXProject "ASCameraExample" */;
 			developmentRegion = en;
@@ -185,6 +186,7 @@
 				A430A8E9DF2261F3535A01B4 /* CardRecorderView.swift in Sources */,
 				03EE66C00787DDF84624D322 /* FullScreenRecorderView.swift in Sources */,
 				0A991912FE3961D22406DE15 /* HomeView.swift in Sources */,
+				5ACA8249354FB27508697A07 /* InterfaceOrientationController.swift in Sources */,
 				50320A0C0AD7AD29189DE9C9 /* Recording.swift in Sources */,
 				97A23FFFBABD2306AC951CE7 /* RecordingDetailView.swift in Sources */,
 				FC7E20D65185335F448C443A /* RecordingMetadata.swift in Sources */,
@@ -322,6 +324,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = H96HCT9TFK;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "ASCamera Example records video using your camera.";
@@ -348,6 +351,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = H96HCT9TFK;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "ASCamera Example records video using your camera.";

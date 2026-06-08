@@ -150,11 +150,18 @@ struct CardRecorderView: View {
         do {
             if camera.state.isRecording {
                 _ = try await camera.stopRecording()
+                // Release the orientation lock now that recording has finished.
+                InterfaceOrientationController.shared.unlock()
             } else {
+                // Lock the interface to the current orientation *before* recording starts, so the
+                // camera (which follows the interface orientation) stays fixed for the whole take.
+                InterfaceOrientationController.shared.lockToCurrent()
                 let url = RecordingsStore.makeRecordingURL(start: Date())
                 try await camera.startRecording(outputURL: url)
             }
         } catch {
+            // If starting failed, don't leave the interface stuck locked.
+            InterfaceOrientationController.shared.unlock()
             errorMessage = error.localizedDescription
         }
     }

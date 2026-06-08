@@ -3,10 +3,19 @@ import SwiftUI
 /// The example's landing screen. Pushes the two recorder layouts and the recordings library.
 struct HomeView: View {
     @Environment(RecordingsStore.self) private var store
+    @Bindable private var orientation = InterfaceOrientationController.shared
 
     var body: some View {
         NavigationStack {
             List {
+                Section {
+                    Toggle("Lock app interface to portrait", isOn: $orientation.isLockedToPortrait)
+                } header: {
+                    Text("Host app orientation")
+                } footer: {
+                    Text("Locks the whole app's interface to portrait, like a real host app. Use it to check how the camera behaves when the host app's orientation is restricted. (Rotate a real device; the Simulator has no accelerometer.)")
+                }
+
                 Section {
                     NavigationLink {
                         FullScreenRecorderView()
