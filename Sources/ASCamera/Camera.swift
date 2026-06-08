@@ -105,6 +105,16 @@ public final class Camera {
         engine.captureSessionBox
     }
 
+    /// The rotation angle the preview should currently apply, computed live from the interface
+    /// orientation. Read (without mutating observed state) by the preview view on layout, so the
+    /// preview re-orients exactly when the interface does — and stays put when the app is locked.
+    var currentInterfaceRotationAngle: CGFloat {
+        OrientationResolver.rotationAngle(
+            for: configuration.orientation,
+            deviceOrientation: currentDeviceOrientation()
+        )
+    }
+
     // MARK: - Lifecycle
 
     /// Starts the camera: verifies permissions, configures the session, and begins the preview.
@@ -335,19 +345,32 @@ public final class Camera {
         return angle
     }
 
+    /// The orientation that drives preview/recording, derived from the **interface** orientation
+    /// (not the physical `UIDevice.current.orientation`). This way the camera honors the host app's
+    /// orientation lock: when the app is locked to portrait, `interfaceOrientation` stays `.portrait`
+    /// and the preview/recording stay upright instead of following the physical device rotation.
+    ///
     private func currentDeviceOrientation() -> DeviceOrientation {
         #if canImport(UIKit)
-        switch UIDevice.current.orientation {
+        switch activeInterfaceOrientation() {
         case .portrait: return .portrait
         case .portraitUpsideDown: return .portraitUpsideDown
         case .landscapeLeft: return .landscapeLeft
         case .landscapeRight: return .landscapeRight
-        default: return .unknown
+        default: return .portrait
         }
         #else
         return .portrait
         #endif
     }
+
+    #if canImport(UIKit)
+    private func activeInterfaceOrientation() -> UIInterfaceOrientation {
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        let scene = scenes.first { $0.activationState == .foregroundActive } ?? scenes.first
+        return scene?.interfaceOrientation ?? .portrait
+    }
+    #endif
 
     private func startObservingDeviceOrientation() {
         #if canImport(UIKit)

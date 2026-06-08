@@ -41,15 +41,12 @@ public struct CameraPreview: UIViewRepresentable {
     /// `camera.previewRotationAngle` here registers SwiftUI observation, so the preview re-orients
     /// automatically when the angle changes.
     private func configure(_ view: CameraPreviewUIView) {
+        view.camera = camera
         guard let previewLayer = view.previewLayer else { return }
         if let box = camera.captureSessionBox, previewLayer.session !== box.value {
             previewLayer.session = box.value
         }
-        let angle = camera.previewRotationAngle
-        if let connection = previewLayer.connection,
-           connection.isVideoRotationAngleSupported(angle) {
-            connection.videoRotationAngle = angle
-        }
+        view.applyInterfaceOrientation()
     }
 }
 #endif

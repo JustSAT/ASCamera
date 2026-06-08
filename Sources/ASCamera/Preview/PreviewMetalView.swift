@@ -9,6 +9,10 @@ import UIKit
 /// `UIViewRepresentable`'s visibility requirements; it is an implementation detail and should not
 /// be constructed directly.
 public final class CameraPreviewUIView: UIView {
+    /// The camera whose interface-orientation angle this view applies. Weak: the view is owned by
+    /// SwiftUI, the camera by the consumer.
+    weak var camera: Camera?
+
     public override class var layerClass: AnyClass {
         AVCaptureVideoPreviewLayer.self
     }
@@ -16,6 +20,21 @@ public final class CameraPreviewUIView: UIView {
     /// The backing preview layer. Optional to avoid a force cast; `layerClass` guarantees the type.
     var previewLayer: AVCaptureVideoPreviewLayer? {
         layer as? AVCaptureVideoPreviewLayer
+    }
+
+    public override func layoutSubviews() {
+        super.layoutSubviews()
+        applyInterfaceOrientation()
+    }
+
+    /// Applies the camera's current interface-orientation angle to the preview connection. Called on
+    /// layout (which fires when the interface rotates) and by ``CameraPreview`` on update.
+    func applyInterfaceOrientation() {
+        guard let camera, let connection = previewLayer?.connection else { return }
+        let angle = camera.currentInterfaceRotationAngle
+        if connection.isVideoRotationAngleSupported(angle) {
+            connection.videoRotationAngle = angle
+        }
     }
 }
 #endif
