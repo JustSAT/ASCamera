@@ -194,6 +194,14 @@ public final class Camera {
     public func startRecording(outputURL: URL) async throws {
         try stateMachine.beginRecording()
         resetDuration()
+        // Resolve the rotation angle HERE rather than trusting the last value pushed by `start()`,
+        // `updateConfiguration(_:)` or a device-rotation notification. The angle is baked into the
+        // movie connection when recording begins, and the interface can rotate without the device
+        // physically moving — an orientation-mask change, iPad multitasking, Stage Manager, a window
+        // resize — none of which emit `UIDevice.orientationDidChangeNotification`. Without this the
+        // preview (which re-resolves the angle on every layout pass) and the recorded file could
+        // disagree, and the take was written in the previously resolved orientation.
+        await engine.setVideoRotationAngle(recomputeOrientationAngle())
         do {
             try await engine.startRecording(to: outputURL, configuration: configuration)
         } catch {
@@ -343,6 +351,27 @@ public final class Camera {
         )
         previewRotationAngle = angle
         return angle
+    }
+
+    /// Re-resolves the interface rotation angle and pushes it to the capture session when it no
+    /// longer matches the angle last resolved. Called by ``CameraPreview`` on layout — the one place
+    /// that reliably observes every interface rotation, including those the device never physically
+    /// performed (and therefore never reported through
+    /// `UIDevice.orientationDidChangeNotification`).
+    ///
+    /// Skipped while a recording is in flight: that take's orientation is already fixed, and its
+    /// connection must not be re-angled mid-file. The work is deferred to the next main-actor turn
+    /// so observed state is never mutated from inside a layout pass.
+    func refreshOrientationIfNeeded() {
+        let angle = currentInterfaceRotationAngle
+        guard angle != previewRotationAngle, !stateMachine.state.hasActiveRecording else { return }
+        Task { @MainActor [weak self] in
+            guard let self, !stateMachine.state.hasActiveRecording else { return }
+            let current = currentInterfaceRotationAngle
+            guard current != previewRotationAngle else { return }
+            previewRotationAngle = current
+            await engine.setVideoRotationAngle(current)
+        }
     }
 
     /// The orientation that drives preview/recording, derived from the **interface** orientation

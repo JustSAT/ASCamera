@@ -17,6 +17,9 @@ actor FakeCameraEngine: CameraEngine {
     private(set) var startRecordingCount = 0
     private(set) var stopRecordingCount = 0
     private(set) var lastRotationAngle: CGFloat?
+    /// The angle already pushed to the engine at the moment `startRecording` was invoked — proves
+    /// the recording picks up a freshly resolved angle instead of a stale one.
+    private(set) var rotationAngleAtRecordingStart: CGFloat?
     private(set) var lastRecordingURL: URL?
     private(set) var lastConfiguration: CameraConfiguration?
 
@@ -43,6 +46,8 @@ actor FakeCameraEngine: CameraEngine {
 
     // MARK: Test configuration
 
+    func clearRotationAngle() { lastRotationAngle = nil }
+
     func setApplyError(_ error: CameraError?) { applyError = error }
     func setStartRecordingError(_ error: CameraError?) { startRecordingError = error }
     func setResultOnStop(_ result: RecordingResult?) { resultOnStop = result }
@@ -65,6 +70,7 @@ actor FakeCameraEngine: CameraEngine {
 
     func startRecording(to url: URL, configuration: CameraConfiguration) async throws {
         startRecordingCount += 1
+        rotationAngleAtRecordingStart = lastRotationAngle
         lastRecordingURL = url
         lastConfiguration = configuration
         if let startRecordingError { throw startRecordingError }

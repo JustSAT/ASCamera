@@ -29,12 +29,18 @@ public final class CameraPreviewUIView: UIView {
 
     /// Applies the camera's current interface-orientation angle to the preview connection. Called on
     /// layout (which fires when the interface rotates) and by ``CameraPreview`` on update.
+    ///
+    /// Layout is also the most reliable signal the library gets that the interface has rotated, so
+    /// this is where the camera is asked to refresh the angle it hands to the capture session —
+    /// otherwise a rotation the device never physically performed would keep the preview and the
+    /// recording out of sync (see ``Camera/refreshOrientationIfNeeded()``).
     func applyInterfaceOrientation() {
         guard let camera, let connection = previewLayer?.connection else { return }
         let angle = camera.currentInterfaceRotationAngle
         if connection.isVideoRotationAngleSupported(angle) {
             connection.videoRotationAngle = angle
         }
+        camera.refreshOrientationIfNeeded()
     }
 }
 #endif
