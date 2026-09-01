@@ -18,6 +18,10 @@ enum CameraEngineEvent: Sendable {
     case interrupted(reason: String)
     /// A prior interruption ended; the engine has resumed (or will resume) running.
     case interruptionEnded
+    /// Audio capture could not be wired up, so the session records video only. Audio is
+    /// best-effort by design, but silently dropping it leaves consumers with a movie that has no
+    /// audio track and no way to know why — this carries the reason instead.
+    case audioUnavailable(reason: String)
     /// A runtime error occurred on the session.
     case runtimeError(CameraError)
 }

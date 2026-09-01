@@ -118,10 +118,24 @@ actor CameraSession: CameraEngine {
     private func configureAudioInput(enabled: Bool) {
         if enabled {
             guard audioInput == nil else { return }
-            guard let device = CameraDeviceDiscovery.audioDevice(),
-                  let input = try? AVCaptureDeviceInput(device: device),
-                  session.canAddInput(input) else {
-                // Audio is best-effort; missing audio hardware should not abort configuration.
+            // Audio is best-effort: a missing microphone must not abort the whole configuration.
+            // Each failure is reported, though — a silently video-only session is indistinguishable
+            // from a working one until someone plays the finished file back.
+            guard let device = CameraDeviceDiscovery.audioDevice() else {
+                eventContinuation.yield(.audioUnavailable(reason: "No audio capture device available."))
+                return
+            }
+            let input: AVCaptureDeviceInput
+            do {
+                input = try AVCaptureDeviceInput(device: device)
+            } catch {
+                eventContinuation.yield(
+                    .audioUnavailable(reason: "Audio device input could not be created: \(error.localizedDescription)")
+                )
+                return
+            }
+            guard session.canAddInput(input) else {
+                eventContinuation.yield(.audioUnavailable(reason: "The capture session refused the audio input."))
                 return
             }
             session.addInput(input)

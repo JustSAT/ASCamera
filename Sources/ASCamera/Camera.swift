@@ -44,6 +44,12 @@ public final class Camera {
     /// ``CameraPreview``; also exposed for advanced consumers.
     public internal(set) var previewRotationAngle: CGFloat
 
+    /// Why the running session records no audio, or `nil` when audio is wired up. Audio is
+    /// best-effort — a session that cannot add the microphone still starts and still records video
+    /// — so this is the only way for a consumer to notice that the resulting files will have no
+    /// audio track. Re-evaluated on every ``start()``.
+    public private(set) var audioUnavailableReason: String?
+
     // MARK: - Permission state
 
     /// The current camera authorization status.
@@ -139,6 +145,7 @@ public final class Camera {
         }
 
         try stateMachine.beginStarting()
+        audioUnavailableReason = nil
         do {
             try await engine.apply(configuration)
             let angle = recomputeOrientationAngle()
@@ -306,6 +313,9 @@ public final class Camera {
                 self.pendingStop = nil
                 pendingStop.resume(throwing: error)
             }
+
+        case .audioUnavailable(let reason):
+            audioUnavailableReason = reason
 
         case .interrupted, .interruptionEnded, .runtimeError:
             // The engine attempts automatic recovery for these; the public state is unchanged.
