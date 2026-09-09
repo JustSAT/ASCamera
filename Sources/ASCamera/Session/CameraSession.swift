@@ -23,6 +23,9 @@ actor CameraSession: CameraEngine {
 
     private var recordingDelegate: MovieRecordingDelegate?
     private var currentRecordingURL: URL?
+    /// Set while a take is captured into a sidecar QuickTime file on behalf of a non-QuickTime
+    /// ``CameraConfiguration/fileType``; consumed when the take finishes.
+    private var pendingRemux: PendingRemux?
     private var lastRecordedDuration: Duration = .zero
     private var progressTask: Task<Void, Never>?
     private var pendingRotationAngle: CGFloat = OrientationResolver.portraitAngle
@@ -234,10 +237,27 @@ actor CameraSession: CameraEngine {
 
         // Stamp the recording-start time into the movie file's QuickTime metadata, so the exported
         // file itself carries the moment recording began (readable via AVAsset, `ffprobe`, etc.).
-        movieOutput.metadata = Self.creationDateMetadata(for: Date())
+        let startDate = Date()
+        movieOutput.metadata = Self.creationDateMetadata(for: startDate)
 
         lastRecordedDuration = .zero
         currentRecordingURL = url
+
+        // `AVCaptureMovieFileOutput` writes QuickTime only. Any other container is produced by
+        // capturing into a sidecar `.mov` and rewrapping it into `url` once the take is complete.
+        let captureURL: URL
+        if configuration.fileType == .quickTimeMovie {
+            pendingRemux = nil
+            captureURL = url
+        } else {
+            captureURL = MovieRemuxer.sidecarURL(for: url)
+            try? FileManager.default.removeItem(at: captureURL)
+            pendingRemux = PendingRemux(
+                destination: url,
+                fileType: configuration.fileType.avFileType,
+                startDate: startDate
+            )
+        }
 
         let continuation = eventContinuation
         let delegate = MovieRecordingDelegate(
@@ -252,7 +272,7 @@ actor CameraSession: CameraEngine {
         )
         recordingDelegate = delegate
         recordingStartInstant = clock.now
-        movieOutput.startRecording(to: url, recordingDelegate: delegate)
+        movieOutput.startRecording(to: captureURL, recordingDelegate: delegate)
         startProgressTracking()
     }
 
@@ -297,15 +317,42 @@ actor CameraSession: CameraEngine {
         currentRecordingURL = nil
         recordingStartInstant = nil
 
+        let pendingRemux = self.pendingRemux
+        self.pendingRemux = nil
+
         guard RecordingOutcome.isSuccessful(error: error) else {
+            if pendingRemux != nil {
+                try? FileManager.default.removeItem(at: url)
+            }
             let reason = (error as NSError?)?.localizedDescription ?? "Unknown recording error."
             eventContinuation.yield(.recordingFailed(.recordingFailed(reason: reason)))
             return
         }
 
-        let duration = await accurateDuration(of: url, fallback: lastRecordedDuration)
-        let fileSize = fileSize(at: url)
-        let result = RecordingResult(url: url, duration: duration, fileSize: fileSize)
+        let outputURL: URL
+        if let pendingRemux {
+            defer { try? FileManager.default.removeItem(at: url) }
+            do {
+                try await MovieRemuxer.remux(
+                    source: url,
+                    to: pendingRemux.destination,
+                    fileType: pendingRemux.fileType,
+                    creationDate: pendingRemux.startDate
+                )
+            } catch {
+                let reason = "Rewrapping the take as \(pendingRemux.destination.pathExtension) failed: "
+                    + error.localizedDescription
+                eventContinuation.yield(.recordingFailed(.recordingFailed(reason: reason)))
+                return
+            }
+            outputURL = pendingRemux.destination
+        } else {
+            outputURL = url
+        }
+
+        let duration = await accurateDuration(of: outputURL, fallback: lastRecordedDuration)
+        let fileSize = fileSize(at: outputURL)
+        let result = RecordingResult(url: outputURL, duration: duration, fileSize: fileSize)
         eventContinuation.yield(.recordingFinished(result))
     }
 
@@ -410,4 +457,13 @@ actor CameraSession: CameraEngine {
             return "unknown"
         }
     }
+}
+
+/// The rewrap owed for the take currently being captured into a QuickTime sidecar.
+private struct PendingRemux {
+    let destination: URL
+    let fileType: AVFileType
+    /// Recording start, re-stamped into the rewrapped file (the sidecar's metadata does not
+    /// survive a passthrough export on its own).
+    let startDate: Date
 }

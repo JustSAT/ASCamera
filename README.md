@@ -124,7 +124,8 @@ Sources/ASCamera/
 │  ├─ Resolution.swift              # .hd / .fullHD / .uhd4K
 │  ├─ TorchMode.swift               # .on / .off / .auto (graceful if unsupported)
 │  ├─ VideoStabilizationMode.swift  # off/standard/cinematic/…/auto
-│  └─ OrientationStrategy.swift     # device / lockedPortrait / lockedLandscape{Left,Right}
+│  ├─ OrientationStrategy.swift     # device / lockedPortrait / lockedLandscape{Left,Right}
+│  └─ RecordingFileType.swift       # .quickTimeMovie / .mpeg4 + output-URL extension guard
 ├─ Permissions/
 │  ├─ PermissionStatus.swift        # Public status enum
 │  ├─ AuthorizationProviding.swift  # Internal protocol (+ AVFoundation impl) → testable
@@ -135,6 +136,7 @@ Sources/ASCamera/
 │  └─ CameraDeviceDiscovery.swift   # Device + format selection
 ├─ Recording/
 │  ├─ MovieRecordingDelegate.swift  # Bridges AVFoundation delegate → @Sendable closures
+│  ├─ MovieRemuxer.swift            # Sidecar .mov → requested container, passthrough export
 │  └─ RecordingOutcome.swift        # Pure finish-error classification (tested)
 ├─ Orientation/
 │  └─ OrientationResolver.swift     # Pure strategy → rotation-angle mapping (tested)
@@ -147,7 +149,7 @@ Sources/ASCamera/
    ├─ Duration+Media.swift          # Duration ↔ CMTime
    └─ UncheckedSendableBox.swift    # The single, documented Sendable bridge
 
-Tests/ASCameraTests/                # 47 tests across 10 suites
+Tests/ASCameraTests/                # 62 tests across 12 suites
 Examples/ASCameraExample/           # Buildable example app (XcodeGen project, 2 screens)
 ```
 
@@ -207,7 +209,7 @@ public final class Camera {
 
     // Recording
     public func startRecording() async throws                 // library-generated file
-    public func startRecording(outputURL: URL) async throws   // your file
+    public func startRecording(outputURL: URL) async throws   // your file; extension must match fileType
     @discardableResult public func stopRecording() async throws -> RecordingResult
 
     // Duration & results
@@ -229,11 +231,13 @@ let config = CameraConfiguration()
     .stabilization(.cinematic)
     .orientation(.lockedPortrait)
     .maximumRecordingDuration(.seconds(30))
+    .fileType(.mpeg4)
 
 // Mutable style
 var c = CameraConfiguration()
 c.position = .back
 c.maximumRecordingDuration = .seconds(30)
+c.fileType = .quickTimeMovie
 ```
 
 New options are added as new properties with defaults, so call sites keep compiling — no giant
@@ -264,6 +268,27 @@ Set `maximumRecordingDuration` and the library stops on its own, delivering a **
     }
 }
 ```
+
+### Output container
+
+`AVCaptureMovieFileOutput` writes QuickTime movies only — and AVFoundation picks the container
+*parser* from the file extension, so a QuickTime take that is merely named `.mp4` reads back with no
+audio track in `AVAsset`, `AVPlayer` and export sessions. ASCamera refuses that up front and produces
+real MPEG-4 when asked for it:
+
+```swift
+// Default: QuickTime. Output URLs must end in .mov (or .qt).
+let camera = Camera()
+try await camera.startRecording(outputURL: url)   // throws .unsupportedConfiguration for "take.mp4"
+
+// MPEG-4: the take is captured as QuickTime next to the requested file and rewrapped into it
+// (passthrough, no re-encoding) when the recording finishes. Output URLs must end in .mp4.
+let mp4Camera = Camera(configuration: CameraConfiguration().fileType(.mpeg4))
+```
+
+Rewrapping is I/O bound and proportional to the file size, so `stopRecording()` takes a little
+longer for long `.mpeg4` takes, and the capture temporarily needs the take's size in free space
+twice. The recording-start stamp is written into the rewrapped file as well.
 
 ### Orientation lock
 
@@ -309,9 +334,9 @@ recording interrupted by the system is finalized into a usable file and surfaced
 xcodebuild test -scheme ASCamera -destination 'platform=iOS Simulator,name=iPhone 17'
 ```
 
-47 tests across 10 suites cover state transitions, permission handling, the recording lifecycle,
-duration tracking, maximum-duration auto-stop, orientation handling, and the embedded start-time
-metadata — all without camera hardware, thanks to the `CameraEngine` / `AuthorizationProviding`
+62 tests across 12 suites cover state transitions, permission handling, the recording lifecycle,
+duration tracking, maximum-duration auto-stop, orientation handling, the output-container guard, and
+the embedded start-time metadata — all without camera hardware, thanks to the `CameraEngine` / `AuthorizationProviding`
 protocol seams.
 
 ## Example app

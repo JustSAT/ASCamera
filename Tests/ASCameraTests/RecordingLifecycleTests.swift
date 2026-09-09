@@ -86,6 +86,31 @@ struct RecordingLifecycleTests {
         #expect(await engine.lastRecordingURL == url)
     }
 
+    @Test("Output URL whose extension does not match the file type is rejected before the engine is touched")
+    func mismatchedOutputURLIsRejected() async throws {
+        let engine = FakeCameraEngine()
+        let camera = Camera.makeForTesting(engine: engine)
+        try await camera.start()
+        let url = URL(fileURLWithPath: "/tmp/mislabeled.mp4")
+        await #expect(throws: CameraError.unsupportedConfiguration(
+            reason: "Output URL extension 'mp4' does not match the configured file type 'mov'."
+        )) {
+            try await camera.startRecording(outputURL: url)
+        }
+        #expect(camera.state == .running)
+        #expect(await engine.startRecordingCount == 0)
+    }
+
+    @Test("Library-generated URL uses the configured file type's extension")
+    func defaultURLFollowsFileType() async throws {
+        let engine = FakeCameraEngine()
+        let camera = Camera.makeForTesting(configuration: CameraConfiguration().fileType(.mpeg4), engine: engine)
+        try await camera.start()
+        try await camera.startRecording()
+        #expect(await engine.lastRecordingURL?.pathExtension == "mp4")
+        #expect(await engine.lastConfiguration?.fileType == .mpeg4)
+    }
+
     @Test("Engine failure on startRecording reverts state to running")
     func startRecordingEngineFailure() async throws {
         let engine = FakeCameraEngine()

@@ -19,6 +19,7 @@ import Foundation
 ///     .resolution(.fullHD)
 ///     .orientation(.lockedPortrait)
 ///     .maximumRecordingDuration(.seconds(30))
+///     .fileType(.mpeg4)
 /// ```
 public struct CameraConfiguration: Sendable, Equatable {
     /// Which physical camera to use. Default: `.back`.
@@ -46,6 +47,10 @@ public struct CameraConfiguration: Sendable, Equatable {
     /// delivers a normal ``RecordingResult``. `nil` means unlimited. Default: `nil`.
     public var maximumRecordingDuration: Duration?
 
+    /// The container recordings are delivered in. Output URLs must carry its extension. Default:
+    /// `.quickTimeMovie`; see ``RecordingFileType`` for what `.mpeg4` costs.
+    public var fileType: RecordingFileType
+
     /// Creates a configuration with sensible defaults.
     public init(
         position: CameraPosition = .back,
@@ -55,7 +60,8 @@ public struct CameraConfiguration: Sendable, Equatable {
         isAudioEnabled: Bool = true,
         stabilization: VideoStabilizationMode = .auto,
         orientation: OrientationStrategy = .device,
-        maximumRecordingDuration: Duration? = nil
+        maximumRecordingDuration: Duration? = nil,
+        fileType: RecordingFileType = .quickTimeMovie
     ) {
         self.position = position
         self.frameRate = frameRate
@@ -65,6 +71,7 @@ public struct CameraConfiguration: Sendable, Equatable {
         self.stabilization = stabilization
         self.orientation = orientation
         self.maximumRecordingDuration = maximumRecordingDuration
+        self.fileType = fileType
     }
 }
 
@@ -124,6 +131,13 @@ public extension CameraConfiguration {
     func maximumRecordingDuration(_ value: Duration?) -> Self {
         var copy = self
         copy.maximumRecordingDuration = value
+        return copy
+    }
+
+    /// Returns a copy that delivers recordings in the given container.
+    func fileType(_ value: RecordingFileType) -> Self {
+        var copy = self
+        copy.fileType = value
         return copy
     }
 }

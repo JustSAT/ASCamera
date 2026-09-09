@@ -14,6 +14,7 @@ struct ConfigurationTests {
         #expect(config.stabilization == .auto)
         #expect(config.orientation == .device)
         #expect(config.maximumRecordingDuration == nil)
+        #expect(config.fileType == .quickTimeMovie)
     }
 
     @Test("Builder helpers compose without mutating the original")

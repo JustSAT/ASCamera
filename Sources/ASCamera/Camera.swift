@@ -185,20 +185,30 @@ public final class Camera {
 
     // MARK: - Recording
 
-    /// Starts recording video to a library-generated file URL in the temporary directory.
+    /// Starts recording video to a library-generated file URL in the temporary directory, named
+    /// with the extension of ``CameraConfiguration/fileType``.
     ///
     /// - Throws: ``CameraError/recordingAlreadyInProgress`` if a recording is active,
     ///   ``CameraError/sessionNotRunning`` if the session is not running.
     public func startRecording() async throws {
-        try await startRecording(outputURL: Self.makeDefaultRecordingURL())
+        try await startRecording(outputURL: Self.makeDefaultRecordingURL(fileType: configuration.fileType))
     }
 
     /// Starts recording video to the provided file URL.
     ///
-    /// - Parameter outputURL: The destination file URL (should have a `.mov` extension).
-    /// - Throws: ``CameraError/recordingAlreadyInProgress`` if a recording is active,
-    ///   ``CameraError/sessionNotRunning`` if the session is not running.
+    /// - Parameter outputURL: The destination file URL. Its extension must match
+    ///   ``CameraConfiguration/fileType`` — a QuickTime take relabelled `.mp4` reads back without its
+    ///   audio track, so a mismatch is refused instead of recorded.
+    /// - Throws: ``CameraError/unsupportedConfiguration(reason:)`` if the extension does not match
+    ///   the configured file type, ``CameraError/recordingAlreadyInProgress`` if a recording is
+    ///   active, ``CameraError/sessionNotRunning`` if the session is not running.
     public func startRecording(outputURL: URL) async throws {
+        guard configuration.fileType.accepts(outputURL) else {
+            throw CameraError.unsupportedConfiguration(
+                reason: "Output URL extension '\(outputURL.pathExtension)' does not match the configured file type "
+                    + "'\(configuration.fileType.pathExtension)'."
+            )
+        }
         try stateMachine.beginRecording()
         resetDuration()
         // Resolve the rotation angle HERE rather than trusting the last value pushed by `start()`,
@@ -432,10 +442,10 @@ public final class Camera {
         (error as? CameraError) ?? .unknown(reason: error.localizedDescription)
     }
 
-    /// Generates a unique `.mov` file URL in the temporary directory for silent recording.
-    static func makeDefaultRecordingURL() -> URL {
+    /// Generates a unique file URL in the temporary directory for ``startRecording()``.
+    static func makeDefaultRecordingURL(fileType: RecordingFileType) -> URL {
         FileManager.default.temporaryDirectory
             .appendingPathComponent("ASCamera-\(UUID().uuidString)")
-            .appendingPathExtension("mov")
+            .appendingPathExtension(fileType.pathExtension)
     }
 }
