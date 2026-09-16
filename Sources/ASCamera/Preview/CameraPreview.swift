@@ -42,6 +42,7 @@ public struct CameraPreview: UIViewRepresentable {
     /// automatically when the angle changes.
     private func configure(_ view: CameraPreviewUIView) {
         view.camera = camera
+        camera.previewTransitionTarget = view
         guard let previewLayer = view.previewLayer else { return }
         if let box = camera.captureSessionBox, previewLayer.session !== box.value {
             previewLayer.session = box.value

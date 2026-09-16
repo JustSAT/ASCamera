@@ -22,6 +22,15 @@ public final class CameraPreviewUIView: UIView {
         layer as? AVCaptureVideoPreviewLayer
     }
 
+    /// The frozen frame covering the feed while the capture device is swapped.
+    private var transitionCover: UIView?
+
+    private static let blurInDuration: TimeInterval = 0.12
+    private static let fadeOutDuration: TimeInterval = 0.28
+    /// The reconfigured session reports back before its first frames reach the layer, so the
+    /// cover is held a moment longer — uncovering immediately reveals a still-black layer.
+    private static let settleDelay: TimeInterval = 0.15
+
     public override func layoutSubviews() {
         super.layoutSubviews()
         applyInterfaceOrientation()
@@ -41,6 +50,51 @@ public final class CameraPreviewUIView: UIView {
             connection.videoRotationAngle = angle
         }
         camera.refreshOrientationIfNeeded()
+    }
+}
+
+// MARK: - Preview transition
+
+extension CameraPreviewUIView: PreviewTransitioning {
+
+    func beginPreviewTransition() {
+        // A cover still fading out from a previous switch would be captured by the snapshot.
+        transitionCover?.removeFromSuperview()
+        transitionCover = nil
+
+        guard let frozenFrame = snapshotView(afterScreenUpdates: false) else { return }
+
+        let cover = UIView(frame: bounds)
+        cover.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        cover.backgroundColor = .black
+
+        frozenFrame.frame = cover.bounds
+        frozenFrame.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        cover.addSubview(frozenFrame)
+
+        let blur = UIVisualEffectView(effect: nil)
+        blur.frame = cover.bounds
+        blur.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        cover.addSubview(blur)
+
+        addSubview(cover)
+        transitionCover = cover
+
+        UIView.animate(withDuration: Self.blurInDuration) {
+            blur.effect = UIBlurEffect(style: .systemThinMaterialDark)
+        }
+    }
+
+    func endPreviewTransition() {
+        guard let cover = transitionCover else { return }
+        transitionCover = nil
+        UIView.animate(
+            withDuration: Self.fadeOutDuration,
+            delay: Self.settleDelay,
+            options: [.curveEaseOut],
+            animations: { cover.alpha = 0 },
+            completion: { _ in cover.removeFromSuperview() }
+        )
     }
 }
 #endif

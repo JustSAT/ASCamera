@@ -111,6 +111,10 @@ public final class Camera {
         engine.captureSessionBox
     }
 
+    /// The attached preview surface, set by ``CameraPreview``. Weak: the view is owned by SwiftUI.
+    /// Used to bridge the gap in the feed when the capture device is swapped.
+    @ObservationIgnored weak var previewTransitionTarget: (any PreviewTransitioning)?
+
     /// The rotation angle the preview should currently apply, computed live from the interface
     /// orientation. Read (without mutating observed state) by the preview view on layout, so the
     /// preview re-orients exactly when the interface does — and stays put when the app is locked.
@@ -172,14 +176,26 @@ public final class Camera {
     /// Applies a new configuration. If the session is currently running (and not recording), it is
     /// reconfigured live; otherwise the configuration is stored for the next ``start()``.
     public func updateConfiguration(_ configuration: CameraConfiguration) async throws {
+        // Only a device swap tears the video input out of the session; every other change is
+        // applied without interrupting the feed and must not trigger a transition.
+        let interruptsPreview = configuration.position != self.configuration.position
         self.configuration = configuration
         let angle = recomputeOrientationAngle()
         guard stateMachine.state == .running else { return }
+        if interruptsPreview {
+            previewTransitionTarget?.beginPreviewTransition()
+        }
         do {
             try await engine.apply(configuration)
             await engine.setVideoRotationAngle(angle)
         } catch {
+            if interruptsPreview {
+                previewTransitionTarget?.endPreviewTransition()
+            }
             throw Self.cameraError(from: error)
+        }
+        if interruptsPreview {
+            previewTransitionTarget?.endPreviewTransition()
         }
     }
 
