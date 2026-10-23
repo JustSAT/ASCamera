@@ -40,8 +40,8 @@ enum CameraDeviceDiscovery {
     ///
     /// Selection strategy:
     /// 1. Prefer formats that support the requested frame rate.
-    /// 2. Among those, choose the format whose pixel area is closest to (and ideally at least)
-    ///    the requested resolution.
+    /// 2. Among those, choose a landscape format whose pixel area is closest to (and ideally at
+    ///    least) the requested resolution.
     /// 3. If no format supports the frame rate, fall back to the closest-resolution format and
     ///    report `supportsRequestedFrameRate == false`.
     static func selectFormat(
@@ -49,14 +49,8 @@ enum CameraDeviceDiscovery {
         resolution: Resolution,
         frameRate: FrameRate
     ) -> FormatSelection? {
-        let targetArea = resolution.pixelCount
         let formats = device.formats.filter { $0.mediaType == .video }
         guard !formats.isEmpty else { return nil }
-
-        func area(of format: AVCaptureDevice.Format) -> Int {
-            let dimensions = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
-            return Int(dimensions.width) * Int(dimensions.height)
-        }
 
         func supportsFrameRate(_ format: AVCaptureDevice.Format) -> Bool {
             format.videoSupportedFrameRateRanges.contains { range in
@@ -64,11 +58,11 @@ enum CameraDeviceDiscovery {
             }
         }
 
-        // Rank by: closeness of pixel area to target (prefer >= target), then smaller area.
-        func score(_ format: AVCaptureDevice.Format) -> (Int, Int) {
-            let formatArea = area(of: format)
-            let meetsTarget = formatArea >= targetArea ? 0 : 1
-            return (meetsTarget, abs(formatArea - targetArea))
+        func score(_ format: AVCaptureDevice.Format) -> FormatScore {
+            formatScore(
+                dimensions: CMVideoFormatDescriptionGetDimensions(format.formatDescription),
+                resolution: resolution
+            )
         }
 
         let supporting = formats.filter(supportsFrameRate)
@@ -82,4 +76,21 @@ enum CameraDeviceDiscovery {
         }
         return nil
     }
+
+    /// Ranks a format by: landscape first, then pixel area at or above the target, then closeness
+    /// of the area to the target. Lower is better.
+    ///
+    /// Orientation comes first because the rotation angles assume landscape buffers: a portrait
+    /// or square format of the same area (offered by the square-sensor Center Stage front cameras)
+    /// would be rotated a quarter turn too far, or recorded square.
+    static func formatScore(dimensions: CMVideoDimensions, resolution: Resolution) -> FormatScore {
+        let targetArea = resolution.pixelCount
+        let formatArea = Int(dimensions.width) * Int(dimensions.height)
+        let orientationPenalty = dimensions.width > dimensions.height ? 0 : 1
+        let meetsTarget = formatArea >= targetArea ? 0 : 1
+        return (orientationPenalty, meetsTarget, abs(formatArea - targetArea))
+    }
 }
+
+/// See ``CameraDeviceDiscovery/formatScore(dimensions:resolution:)``.
+typealias FormatScore = (orientation: Int, meetsTarget: Int, areaDistance: Int)
