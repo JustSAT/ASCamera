@@ -86,8 +86,8 @@ struct OrientationHandlingTests {
         #expect(camera.configuration.orientation == .lockedLandscapeLeft)
     }
 
-    @Test("Front camera in landscape records with the swapped angle while the preview keeps its own")
-    func frontCameraLandscapeRecordingAngle() async throws {
+    @Test("Front camera in landscape uses the swapped angle for both the recording and the preview")
+    func frontCameraLandscapeAngle() async throws {
         let engine = FakeCameraEngine()
         let camera = Camera.makeForTesting(
             configuration: CameraConfiguration().orientation(.lockedLandscapeLeft).position(.front),
@@ -99,7 +99,7 @@ struct OrientationHandlingTests {
         try await camera.startRecording(outputURL: URL(fileURLWithPath: "/tmp/ascamera-test.mov"))
 
         #expect(await engine.rotationAngleAtRecordingStart == 0)
-        #expect(camera.previewRotationAngle == 180)
+        #expect(camera.previewRotationAngle == 0)
     }
 
     @Test("Switching to the front camera pushes its landscape recording angle")
@@ -115,5 +115,6 @@ struct OrientationHandlingTests {
         try await camera.updateConfiguration(camera.configuration.position(.front))
 
         #expect(await engine.lastRotationAngle == 0)
+        #expect(camera.previewRotationAngle == 0)
     }
 }

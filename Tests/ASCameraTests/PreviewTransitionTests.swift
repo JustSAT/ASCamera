@@ -1,13 +1,21 @@
+import CoreGraphics
 import Testing
 @testable import ASCamera
 
 @MainActor
 private final class SpyPreviewTransitionTarget: PreviewTransitioning {
+    weak var camera: Camera?
     private(set) var beginCount = 0
     private(set) var endCount = 0
+    /// The preview angle the camera exposed when the transition ended — the one the preview view
+    /// re-applies to the new device's connection.
+    private(set) var previewRotationAngleAtEnd: CGFloat?
 
     func beginPreviewTransition() { beginCount += 1 }
-    func endPreviewTransition() { endCount += 1 }
+    func endPreviewTransition() {
+        endCount += 1
+        previewRotationAngleAtEnd = camera?.previewRotationAngle
+    }
 }
 
 @MainActor
@@ -25,6 +33,21 @@ struct PreviewTransitionTests {
 
         #expect(target.beginCount == 1)
         #expect(target.endCount == 1)
+    }
+
+    @Test("The transition ends with the new device's preview angle already resolved")
+    func transitionEndsWithNewDeviceAngle() async throws {
+        let target = SpyPreviewTransitionTarget()
+        let camera = Camera.makeForTesting(
+            configuration: CameraConfiguration().orientation(.lockedLandscapeLeft)
+        )
+        target.camera = camera
+        camera.previewTransitionTarget = target
+        try await camera.start()
+
+        try await camera.updateConfiguration(camera.configuration.position(.front))
+
+        #expect(target.previewRotationAngleAtEnd == 0)
     }
 
     @Test("Changes that keep the position do not interrupt the preview")

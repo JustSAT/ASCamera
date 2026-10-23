@@ -86,6 +86,9 @@ extension CameraPreviewUIView: PreviewTransitioning {
     }
 
     func endPreviewTransition() {
+        // The swapped-in device comes with a new preview connection that does not carry the angle
+        // applied to the old one, and nothing triggers a layout pass to re-apply it.
+        applyInterfaceOrientation()
         guard let cover = transitionCover else { return }
         transitionCover = nil
         UIView.animate(

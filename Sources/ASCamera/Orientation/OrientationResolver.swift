@@ -34,7 +34,9 @@ enum OrientationResolver {
     static let landscapeLeftAngle: CGFloat = 180
     static let landscapeRightAngle: CGFloat = 0
 
-    /// The rotation angle (degrees, clockwise) for the given strategy and device orientation.
+    /// The rotation angle (degrees, clockwise) for the given strategy and device orientation, as
+    /// seen by the back camera. Use ``rotationAngle(for:deviceOrientation:position:)`` for a
+    /// connection fed by a concrete camera.
     static func rotationAngle(
         for strategy: OrientationStrategy,
         deviceOrientation: DeviceOrientation
@@ -51,11 +53,12 @@ enum OrientationResolver {
         }
     }
 
-    /// The rotation angle (degrees, clockwise) for the recording output of the camera at
-    /// `position`. The back camera records with the preview angle. The front sensor is mounted
-    /// opposite to the back one, so its landscape angles are swapped — reusing the back-camera
-    /// angle writes landscape front-camera takes upside down.
-    static func captureRotationAngle(
+    /// The rotation angle (degrees, clockwise) for the preview and recording connections of the
+    /// camera at `position`. The front sensor is mounted opposite to the back one, so its
+    /// landscape angles are swapped — reusing the back-camera angle turns landscape front-camera
+    /// frames upside down. Preview mirroring only flips horizontally, so the preview needs the
+    /// same angle as the recording.
+    static func rotationAngle(
         for strategy: OrientationStrategy,
         deviceOrientation: DeviceOrientation,
         position: CameraPosition
