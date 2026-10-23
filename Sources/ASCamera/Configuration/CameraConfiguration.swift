@@ -20,6 +20,7 @@ import Foundation
 ///     .orientation(.lockedPortrait)
 ///     .maximumRecordingDuration(.seconds(30))
 ///     .fileType(.mpeg4)
+///     .frontRecordingMirrored(true)
 /// ```
 public struct CameraConfiguration: Sendable, Equatable {
     /// Which physical camera to use. Default: `.back`.
@@ -51,6 +52,11 @@ public struct CameraConfiguration: Sendable, Equatable {
     /// `.quickTimeMovie`; see ``RecordingFileType`` for what `.mpeg4` costs.
     public var fileType: RecordingFileType
 
+    /// Whether front camera recordings are mirrored like the front camera preview. Back camera
+    /// recordings are never mirrored. Default: `false` — the take shows the scene as it is, with
+    /// text readable.
+    public var isFrontRecordingMirrored: Bool
+
     /// Creates a configuration with sensible defaults.
     public init(
         position: CameraPosition = .back,
@@ -61,7 +67,8 @@ public struct CameraConfiguration: Sendable, Equatable {
         stabilization: VideoStabilizationMode = .auto,
         orientation: OrientationStrategy = .device,
         maximumRecordingDuration: Duration? = nil,
-        fileType: RecordingFileType = .quickTimeMovie
+        fileType: RecordingFileType = .quickTimeMovie,
+        isFrontRecordingMirrored: Bool = false
     ) {
         self.position = position
         self.frameRate = frameRate
@@ -72,6 +79,12 @@ public struct CameraConfiguration: Sendable, Equatable {
         self.orientation = orientation
         self.maximumRecordingDuration = maximumRecordingDuration
         self.fileType = fileType
+        self.isFrontRecordingMirrored = isFrontRecordingMirrored
+    }
+
+    /// Whether the recording output of the current camera is mirrored.
+    var isRecordingMirrored: Bool {
+        isFrontRecordingMirrored && position == .front
     }
 }
 
@@ -138,6 +151,13 @@ public extension CameraConfiguration {
     func fileType(_ value: RecordingFileType) -> Self {
         var copy = self
         copy.fileType = value
+        return copy
+    }
+
+    /// Returns a copy with front camera recordings mirrored or not.
+    func frontRecordingMirrored(_ value: Bool) -> Self {
+        var copy = self
+        copy.isFrontRecordingMirrored = value
         return copy
     }
 }

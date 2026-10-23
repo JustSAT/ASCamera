@@ -15,6 +15,7 @@ struct ConfigurationTests {
         #expect(config.orientation == .device)
         #expect(config.maximumRecordingDuration == nil)
         #expect(config.fileType == .quickTimeMovie)
+        #expect(!config.isFrontRecordingMirrored)
     }
 
     @Test("Builder helpers compose without mutating the original")
@@ -29,6 +30,7 @@ struct ConfigurationTests {
             .stabilization(.cinematic)
             .orientation(.lockedPortrait)
             .maximumRecordingDuration(.seconds(30))
+            .frontRecordingMirrored(true)
 
         #expect(configured.position == .front)
         #expect(configured.frameRate == .fps60)
@@ -38,6 +40,7 @@ struct ConfigurationTests {
         #expect(configured.stabilization == .cinematic)
         #expect(configured.orientation == .lockedPortrait)
         #expect(configured.maximumRecordingDuration == .seconds(30))
+        #expect(configured.isFrontRecordingMirrored)
 
         // Original is untouched (value semantics).
         #expect(base.position == .back)
@@ -65,5 +68,13 @@ struct ConfigurationTests {
     func resolutionOrdering() {
         #expect(Resolution.hd.pixelCount < Resolution.fullHD.pixelCount)
         #expect(Resolution.fullHD.pixelCount < Resolution.uhd4K.pixelCount)
+    }
+
+    @Test("Only front camera recordings are mirrored, and only when asked to")
+    func recordingMirroring() {
+        #expect(CameraConfiguration().position(.front).frontRecordingMirrored(true).isRecordingMirrored)
+        #expect(!CameraConfiguration().position(.front).frontRecordingMirrored(false).isRecordingMirrored)
+        #expect(!CameraConfiguration().position(.back).frontRecordingMirrored(true).isRecordingMirrored)
+        #expect(!CameraConfiguration().position(.back).frontRecordingMirrored(false).isRecordingMirrored)
     }
 }

@@ -93,6 +93,7 @@ actor CameraSession: CameraEngine {
             throw mapConfigurationError(error)
         }
         applyStabilization(configuration.stabilization)
+        applyMirroring(configuration.isRecordingMirrored)
         applyRotationAngle(pendingRotationAngle)
     }
 
@@ -187,6 +188,16 @@ actor CameraSession: CameraEngine {
         connection.preferredVideoStabilizationMode = mode.avStabilizationMode
     }
 
+    /// Mirroring is set explicitly: the automatic adjustment would follow AVFoundation's own
+    /// default rather than ``CameraConfiguration/isFrontRecordingMirrored``. Re-applied on every
+    /// configuration, since a camera switch brings a new connection.
+    private func applyMirroring(_ isMirrored: Bool) {
+        guard let connection = movieOutput.connection(with: .video),
+              connection.isVideoMirroringSupported else { return }
+        connection.automaticallyAdjustsVideoMirroring = false
+        connection.isVideoMirrored = isMirrored
+    }
+
     private func applyRotationAngle(_ angle: CGFloat) {
         guard let connection = movieOutput.connection(with: .video),
               connection.isVideoRotationAngleSupported(angle) else { return }
@@ -233,6 +244,7 @@ actor CameraSession: CameraEngine {
             movieOutput.maxRecordedDuration = .invalid
         }
         applyStabilization(configuration.stabilization)
+        applyMirroring(configuration.isRecordingMirrored)
         applyRotationAngle(pendingRotationAngle)
 
         // Stamp the recording-start time into the movie file's QuickTime metadata, so the exported
