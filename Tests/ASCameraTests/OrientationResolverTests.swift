@@ -32,4 +32,26 @@ struct OrientationResolverTests {
     func unknownFallsBackToPortrait() {
         #expect(OrientationResolver.rotationAngle(for: .device, deviceOrientation: .unknown) == 90)
     }
+
+    @Test("Front camera recording swaps the landscape angles and keeps the portrait ones")
+    func frontCameraCaptureAngles() {
+        #expect(OrientationResolver.captureRotationAngle(for: .device, deviceOrientation: .landscapeLeft, position: .front) == 0)
+        #expect(OrientationResolver.captureRotationAngle(for: .device, deviceOrientation: .landscapeRight, position: .front) == 180)
+        #expect(OrientationResolver.captureRotationAngle(for: .device, deviceOrientation: .portrait, position: .front) == 90)
+        #expect(OrientationResolver.captureRotationAngle(for: .device, deviceOrientation: .portraitUpsideDown, position: .front) == 270)
+        #expect(OrientationResolver.captureRotationAngle(for: .lockedLandscapeLeft, deviceOrientation: .portrait, position: .front) == 0)
+        #expect(OrientationResolver.captureRotationAngle(for: .lockedLandscapeRight, deviceOrientation: .portrait, position: .front) == 180)
+    }
+
+    @Test("Back camera recording uses the preview angles")
+    func backCameraCaptureAngles() {
+        for strategy in OrientationStrategy.allCases {
+            for device: DeviceOrientation in [.portrait, .landscapeLeft, .landscapeRight, .portraitUpsideDown, .unknown] {
+                #expect(
+                    OrientationResolver.captureRotationAngle(for: strategy, deviceOrientation: device, position: .back)
+                        == OrientationResolver.rotationAngle(for: strategy, deviceOrientation: device)
+                )
+            }
+        }
+    }
 }

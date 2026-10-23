@@ -51,6 +51,27 @@ enum OrientationResolver {
         }
     }
 
+    /// The rotation angle (degrees, clockwise) for the recording output of the camera at
+    /// `position`. The back camera records with the preview angle. The front sensor is mounted
+    /// opposite to the back one, so its landscape angles are swapped — reusing the back-camera
+    /// angle writes landscape front-camera takes upside down.
+    static func captureRotationAngle(
+        for strategy: OrientationStrategy,
+        deviceOrientation: DeviceOrientation,
+        position: CameraPosition
+    ) -> CGFloat {
+        let angle = rotationAngle(for: strategy, deviceOrientation: deviceOrientation)
+        guard position == .front else { return angle }
+        switch angle {
+        case landscapeLeftAngle:
+            return landscapeRightAngle
+        case landscapeRightAngle:
+            return landscapeLeftAngle
+        default:
+            return angle
+        }
+    }
+
     private static func angle(for orientation: DeviceOrientation) -> CGFloat {
         switch orientation {
         case .portrait:

@@ -379,14 +379,20 @@ public final class Camera {
         }
     }
 
+    /// Re-resolves the preview angle and returns the angle the recording output needs, which
+    /// differs from the preview one for the front camera in landscape.
     @discardableResult
     private func recomputeOrientationAngle() -> CGFloat {
-        let angle = OrientationResolver.rotationAngle(
+        let deviceOrientation = currentDeviceOrientation()
+        previewRotationAngle = OrientationResolver.rotationAngle(
             for: configuration.orientation,
-            deviceOrientation: currentDeviceOrientation()
+            deviceOrientation: deviceOrientation
         )
-        previewRotationAngle = angle
-        return angle
+        return OrientationResolver.captureRotationAngle(
+            for: configuration.orientation,
+            deviceOrientation: deviceOrientation,
+            position: configuration.position
+        )
     }
 
     /// Re-resolves the interface rotation angle and pushes it to the capture session when it no
@@ -405,8 +411,7 @@ public final class Camera {
             guard let self, !stateMachine.state.hasActiveRecording else { return }
             let current = currentInterfaceRotationAngle
             guard current != previewRotationAngle else { return }
-            previewRotationAngle = current
-            await engine.setVideoRotationAngle(current)
+            await engine.setVideoRotationAngle(recomputeOrientationAngle())
         }
     }
 
